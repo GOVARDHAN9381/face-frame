@@ -1,46 +1,26 @@
-// ============================================================
-//  spectacle_display.ino  –  ESP32 OLED Display
-//  SpectAI – AI Spectacle Recommendation System
-//
-//  Hardware:
-//    - ESP32 DevKit v1 (any variant)
-//    - OLED SSD1306 128x64  (I2C: SDA=21, SCL=22)
-//
-//  Libraries (install via Arduino Library Manager):
-//    - Adafruit SSD1306      >= 2.5.9
-//    - Adafruit GFX Library  >= 1.11.9
-//    - ArduinoJson           >= 7.0.0
-//
-//  Usage:
-//    1. Set WIFI_SSID / WIFI_PASSWORD below
-//    2. Set FLASK_HOST to your PC's local IP (e.g. 192.168.1.50)
-//    3. Flash to ESP32 — it fetches /results/latest every 30s
-//    4. Alternatively the Flask backend POSTs to /data on this ESP32
-// ============================================================
-
-#include <WiFi.h>
-#include <WiFiClientSecure.h>
-#include <HTTPClient.h>
-#include <ArduinoJson.h>
-#include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <ArduinoJson.h>
+#include <HTTPClient.h>
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <Wire.h>
 
 // ── WiFi credentials ─────────────────────────────────────
-const char* WIFI_SSID     = "YOUR_WIFI_SSID";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+const char *WIFI_SSID = "iQOO Z10R 5G";
+const char *WIFI_PASSWORD = "123456789";
 
 // ── Flask server (Cloud Deployment URL) ────────────────────
 // Example for Render: "your-app.onrender.com"
-const char* FLASK_HOST = "face-frame.onrender.com";
-const int   FLASK_PORT = 443;  // Use 443 for HTTPS, 80 for HTTP
-const bool  USE_HTTPS  = true; // Set to true if FLASK_PORT is 443
+const char *FLASK_HOST = "face-frame.onrender.com";
+const int FLASK_PORT = 443;  // Use 443 for HTTPS, 80 for HTTP
+const bool USE_HTTPS = true; // Set to true if FLASK_PORT is 443
 
 // ── OLED configuration ───────────────────────────────────
-#define SCREEN_W    128
-#define SCREEN_H     64
-#define OLED_RESET   -1          // no reset pin
-#define OLED_ADDR  0x3C          // common SSD1306 I2C address
+#define SCREEN_W 128
+#define SCREEN_H 64
+#define OLED_RESET -1  // no reset pin
+#define OLED_ADDR 0x3C // common SSD1306 I2C address
 
 Adafruit_SSD1306 display(SCREEN_W, SCREEN_H, &Wire, OLED_RESET);
 
@@ -48,24 +28,25 @@ Adafruit_SSD1306 display(SCREEN_W, SCREEN_H, &Wire, OLED_RESET);
 struct SlideData {
   String faceShape;
   String eyeShape;
-  float  pd;
+  float pd;
   String frameSize;
   String frameStyle;
 };
 
 SlideData g_data;
-bool      g_dataReady   = false;
-int       g_currentSlide = 0;
+bool g_dataReady = false;
+int g_currentSlide = 0;
 
 // ── Web server for receiving POST /data ──────────────────
 #include <WebServer.h>
 WebServer server(80);
 
 // ── Timing ───────────────────────────────────────────────
-unsigned long lastFetch     = 0;
+unsigned long lastFetch = 0;
 unsigned long lastSlideSwap = 0;
-const unsigned long FETCH_INTERVAL = 3000UL;    // 3 s auto-refresh (faster for cloud)
-const unsigned long SLIDE_INTERVAL =  3000UL;   // 3 s per slide
+const unsigned long FETCH_INTERVAL =
+    3000UL; // 3 s auto-refresh (faster for cloud)
+const unsigned long SLIDE_INTERVAL = 3000UL; // 3 s per slide
 
 // ─────────────────────────────────────────────────────────
 void setup() {
@@ -75,7 +56,8 @@ void setup() {
   // ── OLED init ──
   if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
     Serial.println("SSD1306 init failed – check wiring");
-    while (true) delay(1000);
+    while (true)
+      delay(1000);
   }
 
   showBootScreen();
@@ -85,7 +67,9 @@ void setup() {
   Serial.print("Connecting to WiFi");
   int tries = 0;
   while (WiFi.status() != WL_CONNECTED && tries < 30) {
-    delay(500); Serial.print('.'); tries++;
+    delay(500);
+    Serial.print('.');
+    tries++;
     showConnecting(tries);
   }
 
@@ -98,14 +82,14 @@ void setup() {
   }
 
   // ── HTTP server endpoints ──
-  server.on("/data",   HTTP_POST, handlePostData);
-  server.on("/data",   HTTP_OPTIONS, []() {
+  server.on("/data", HTTP_POST, handlePostData);
+  server.on("/data", HTTP_OPTIONS, []() {
     server.sendHeader("Access-Control-Allow-Origin", "*");
     server.sendHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
     server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
     server.send(204);
   });
-  server.on("/health", HTTP_GET,  [](){
+  server.on("/health", HTTP_GET, []() {
     server.sendHeader("Access-Control-Allow-Origin", "*");
     server.send(200, "application/json", "{\"status\":\"ok\"}");
   });
@@ -131,7 +115,7 @@ void loop() {
   if (g_dataReady && millis() - lastSlideSwap > SLIDE_INTERVAL) {
     showSlide(g_currentSlide);
     g_currentSlide = (g_currentSlide + 1) % 4;
-    lastSlideSwap  = millis();
+    lastSlideSwap = millis();
   }
 }
 
@@ -163,13 +147,15 @@ void handlePostData() {
 //  Fetch latest scan from Flask GET /results/latest
 // ─────────────────────────────────────────────────────────
 void fetchLatestResults() {
-  if (WiFi.status() != WL_CONNECTED) return;
+  if (WiFi.status() != WL_CONNECTED)
+    return;
 
   String protocol = USE_HTTPS ? "https://" : "http://";
-  String url = protocol + String(FLASK_HOST) + ":" + String(FLASK_PORT) + "/history?limit=1";
+  String url = protocol + String(FLASK_HOST) + ":" + String(FLASK_PORT) +
+               "/history?limit=1";
 
   HTTPClient http;
-  
+
   if (USE_HTTPS) {
     WiFiClientSecure *client = new WiFiClientSecure;
     client->setInsecure(); // Accept any HTTPS certificate
@@ -177,7 +163,7 @@ void fetchLatestResults() {
   } else {
     http.begin(url);
   }
-  
+
   http.setTimeout(5000);
   int code = http.GET();
 
@@ -199,14 +185,14 @@ void fetchLatestResults() {
 //  Parse JSON document into SlideData
 // ─────────────────────────────────────────────────────────
 void parseJsonToData(JsonVariantConst doc) {
-  g_data.faceShape  = doc["face_shape"]  | "Unknown";
-  g_data.eyeShape   = doc["eye_shape"]   | "Unknown";
-  g_data.pd         = doc["pd"]          | 0.0f;
-  g_data.frameSize  = doc["frame_size"]  | "—";
+  g_data.faceShape = doc["face_shape"] | "Unknown";
+  g_data.eyeShape = doc["eye_shape"] | "Unknown";
+  g_data.pd = doc["pd"] | 0.0f;
+  g_data.frameSize = doc["frame_size"] | "—";
   g_data.frameStyle = doc["frame_style"] | "—";
-  g_dataReady       = true;
-  g_currentSlide    = 0;
-  lastSlideSwap     = 0;    // show first slide immediately
+  g_dataReady = true;
+  g_currentSlide = 0;
+  lastSlideSwap = 0; // show first slide immediately
 }
 
 // ─────────────────────────────────────────────────────────
@@ -217,10 +203,18 @@ void showSlide(int idx) {
   display.setTextColor(SSD1306_WHITE);
 
   switch (idx) {
-    case 0: slideface();   break;
-    case 1: slideEye();    break;
-    case 2: slidePD();     break;
-    case 3: slideFrame();  break;
+  case 0:
+    slideface();
+    break;
+  case 1:
+    slideEye();
+    break;
+  case 2:
+    slidePD();
+    break;
+  case 3:
+    slideFrame();
+    break;
   }
 
   // Bottom progress dots
@@ -306,7 +300,8 @@ void showConnecting(int dots) {
   display.println("Connecting WiFi");
   display.setCursor(10, 32);
   String d = "";
-  for (int i = 0; i < (dots % 4) + 1; i++) d += ".";
+  for (int i = 0; i < (dots % 4) + 1; i++)
+    d += ".";
   display.println(d);
   display.display();
 }
@@ -317,7 +312,8 @@ void showIP(String ip) {
   display.setCursor(14, 6);
   display.println("WiFi Connected!");
   display.setCursor(4, 24);
-  display.print("IP: "); display.println(ip);
+  display.print("IP: ");
+  display.println(ip);
   display.setCursor(4, 42);
   display.println("Awaiting data...");
   display.display();
