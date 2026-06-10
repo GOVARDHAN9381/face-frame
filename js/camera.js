@@ -3,8 +3,8 @@
    SpectAI – AI Spectacle Recommendation System
    ============================================================ */
 
-const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : window.location.origin;
-const ESP32_IP = '192.168.137.247'; // Set this to the IP shown on your OLED screen!
+const API_BASE = 'https://face-frame.onrender.com';
+const ESP32_IP = '192.168.137.39'; // Set this to the IP shown on your OLED screen!
 
 let stream = null;
 let facingMode = 'user';

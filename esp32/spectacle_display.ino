@@ -32,7 +32,7 @@ const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 
 // ── Flask server (Cloud Deployment URL) ────────────────────
 // Example for Render: "your-app.onrender.com"
-const char* FLASK_HOST = "YOUR_FLASK_APP_URL.onrender.com";
+const char* FLASK_HOST = "face-frame.onrender.com";
 const int   FLASK_PORT = 443;  // Use 443 for HTTPS, 80 for HTTP
 const bool  USE_HTTPS  = true; // Set to true if FLASK_PORT is 443
 

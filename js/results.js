@@ -3,7 +3,7 @@
    SpectAI – AI Spectacle Recommendation System
    ============================================================ */
 
-const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : window.location.origin;
+const API_BASE = 'https://face-frame.onrender.com';
 
 // Shape meta-data
 const FACE_SHAPE_META = {
