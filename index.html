@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Spectacle Recommendation System</title>
+  <meta name="description" content="Smart eyewear recommendations powered by AI computer vision. Analyze your face shape, eye shape, and get the perfect spectacle frame match in seconds." />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    /* ── Home-page specific ── */
+    .hero-cta { display:flex; gap:16px; align-items:center; flex-wrap:wrap; justify-content:center; }
+
+    .how-section {
+      padding: 60px 48px 80px;
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .steps-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .step-item {
+      flex: 1;
+      min-width: 140px;
+      max-width: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 14px;
+      padding: 0 16px;
+    }
+
+    .step-circle {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      position: relative;
+      z-index: 1;
+      transition: var(--transition);
+    }
+
+    .step-item:hover .step-circle {
+      border-color: var(--accent-blue);
+      background: rgba(99,179,237,0.1);
+      box-shadow: var(--shadow-glow-blue);
+    }
+
+    .step-label {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .step-arrow {
+      align-self: center;
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      margin-top: -14px;
+    }
+
+    .tech-strip {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .tech-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .tech-label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-right: 8px;
+    }
+
+    /* floating glasses SVG */
+    .glasses-float {
+      animation: float 4s ease-in-out infinite;
+      display: inline-block;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-12px); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Animated Background -->
+  <div class="bg-grid"></div>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+
+  <div class="page-wrapper">
+    <!-- Navbar -->
+    <nav class="navbar">
+      <a href="index.html" class="navbar-brand">
+        <div class="brand-icon">👓</div>
+        <span class="brand-text">SpectAI</span>
+      </a>
+      <div class="nav-steps">
+        <a href="index.html" class="nav-step active">
+          <span class="nav-step-num">1</span> Home
+        </a>
+        <div class="nav-step-divider"></div>
+        <a href="camera.html" class="nav-step">
+          <span class="nav-step-num">2</span> Scan
+        </a>
+        <div class="nav-step-divider"></div>
+        <a href="results.html" class="nav-step">
+          <span class="nav-step-num">3</span> Results
+        </a>
+      </div>
+      <a href="camera.html" class="btn btn-primary" id="nav-start-btn">
+        <span>🔍</span> Start Scan
+      </a>
+    </nav>
+
+    <main class="main-content">
+      <!-- Hero -->
+      <section class="hero">
+        <div class="hero-badge">
+          <div class="hero-badge-dot"></div>
+          AI-Powered Computer Vision
+        </div>
+
+        <h1 class="hero-title">
+          Find Your Perfect<br/>
+          <span class="gradient-text">Spectacle Frame</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Our AI analyzes 468 facial landmarks, measures face dimensions, detects eye shape,
+          and recommends the ideal spectacle frame — all in real time.
+        </p>
+
+        <div class="hero-cta">
+          <a href="camera.html" class="btn btn-primary btn-lg" id="start-scan-btn">
+            <span>📷</span> Start Face Scan
+          </a>
+          <a href="#how-it-works" class="btn btn-ghost btn-lg" id="learn-more-btn">
+            Learn How It Works
+          </a>
+        </div>
+
+        <!-- Stats -->
+        <div class="hero-stats">
+          <div class="stat-card">
+            <div class="stat-value">468</div>
+            <div class="stat-label">Facial Landmarks</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">6</div>
+            <div class="stat-label">Face Shapes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">5</div>
+            <div class="stat-label">Eye Shape Types</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">&lt;2s</div>
+            <div class="stat-label">Analysis Time</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tech Strip -->
+      <div class="tech-strip">
+        <span class="tech-label">Powered by</span>
+        <span class="tech-tag">🐍 Python</span>
+        <span class="tech-tag">🎯 MediaPipe</span>
+        <span class="tech-tag">📷 OpenCV</span>
+        <span class="tech-tag">🌐 Flask</span>
+        <span class="tech-tag">⚡ ESP32</span>
+        <span class="tech-tag">🖥️ OLED SSD1306</span>
+      </div>
+
+      <!-- How It Works -->
+      <section class="how-section" id="how-it-works">
+        <h2 class="section-title">How <span>It Works</span></h2>
+        <div class="steps-row">
+          <div class="step-item">
+            <div class="step-circle">📷</div>
+            <div class="step-label">Webcam Capture</div>
+          </div>
+          <div class="step-arrow">→</div>
+          <div class="step-item">
+            <div class="step-circle">🎯</div>
+            <div class="step-label">Face Mesh Detection</div>
+          </div>
+          <div class="step-arrow">→</div>
+          <div class="step-item">
+            <div class="step-circle">📐</div>
+            <div class="step-label">Measurements Extracted</div>
+          </div>
+          <div class="step-arrow">→</div>
+          <div class="step-item">
+            <div class="step-circle">🔮</div>
+            <div class="step-label">Shape Classification</div>
+          </div>
+          <div class="step-arrow">→</div>
+          <div class="step-item">
+            <div class="step-circle">👓</div>
+            <div class="step-label">Frame Recommended</div>
+          </div>
+          <div class="step-arrow">→</div>
+          <div class="step-item">
+            <div class="step-circle">📟</div>
+            <div class="step-label">OLED Display</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section class="features-section">
+        <h2 class="section-title">What We <span>Analyze</span></h2>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon blue">📏</div>
+            <div class="feature-title">Face Dimensions</div>
+            <div class="feature-desc">Measures face width, length, forehead, jaw, and cheekbone widths in millimetres using landmark ratios.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon cyan">🔮</div>
+            <div class="feature-title">Face Shape Detection</div>
+            <div class="feature-desc">Classifies into Oval, Round, Square, Heart, Diamond, or Oblong based on proportional analysis.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon purple">👁️</div>
+            <div class="feature-title">Eye Analysis</div>
+            <div class="feature-desc">Calculates eye width, height, aspect ratio, and detects Almond, Round, Hooded, Upturned, or Downturned shape.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon pink">↔️</div>
+            <div class="feature-title">Pupillary Distance</div>
+            <div class="feature-desc">Precisely computes interpupillary distance (PD) — critical for accurate lens placement in spectacle frames.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon green">👓</div>
+            <div class="feature-title">Frame Recommendation</div>
+            <div class="feature-desc">Recommends optimal frame size (S/M/L) and style (Rectangle, Round, Aviator, Rimless etc.) for your face.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon orange">📟</div>
+            <div class="feature-title">ESP32 OLED Display</div>
+            <div class="feature-desc">Results are sent via WiFi to an ESP32 microcontroller and displayed on an SSD1306 OLED screen in rotating slides.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA Banner -->
+      <section style="padding:0 48px 80px; display:flex; justify-content:center;">
+        <div style="
+          background: linear-gradient(135deg, rgba(99,179,237,0.1) 0%, rgba(159,122,234,0.1) 100%);
+          border: 1px solid rgba(99,179,237,0.25);
+          border-radius: var(--radius-xl);
+          padding: 48px;
+          text-align: center;
+          max-width: 700px;
+          width: 100%;
+          position: relative;
+          overflow: hidden;
+        ">
+          <div style="font-size:3rem; margin-bottom:16px;" class="glasses-float">👓</div>
+          <h2 style="font-family:'Space Grotesk',sans-serif; font-size:1.8rem; font-weight:700; margin-bottom:12px;">
+            Ready to Find Your Perfect Frame?
+          </h2>
+          <p style="color:var(--text-secondary); margin-bottom:28px; max-width:440px; margin-inline:auto;">
+            Position your face in front of the camera and let our AI do the rest. Takes less than 2 seconds.
+          </p>
+          <a href="camera.html" class="btn btn-primary btn-lg" id="cta-start-btn">
+            <span>🚀</span> Begin Your Scan
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span>© 2025 SpectAI – AI Spectacle Recommendation System</span>
+      <span>Built with MediaPipe · OpenCV · Flask · ESP32</span>
+    </footer>
+  </div>
+</body>
+</html>

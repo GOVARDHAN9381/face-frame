@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analysis Results – SpectAI</title>
+  <meta name="description" content="Your AI facial analysis results with spectacle frame recommendations." />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .results-split {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    .sidebar-card {
+      background: var(--gradient-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: sticky;
+      top: 100px;
+    }
+    .sidebar-img {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #000;
+      aspect-ratio: 4/3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    .sidebar-img img { width:100%; height:100%; object-fit:cover; display:block; }
+    .scan-id {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .confidence-row {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .conf-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+    .conf-label { color: var(--text-secondary); }
+    .conf-val { font-weight: 600; color: var(--accent-blue); font-family: 'Space Grotesk', sans-serif; }
+
+    .oled-preview {
+      background: #000;
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      color: #4fd1c5;
+      line-height: 1.6;
+      text-shadow: 0 0 8px rgba(79,209,197,0.8);
+      position: relative;
+    }
+    .oled-preview::before {
+      content: 'OLED SSD1306';
+      position: absolute;
+      top: -10px; left: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      background: var(--bg-dark);
+      padding: 0 6px;
+    }
+    .oled-slide { display: none; }
+    .oled-slide.active { display: block; }
+
+    .esp-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      background: rgba(104,211,145,0.08);
+      border: 1px solid rgba(104,211,145,0.2);
+      color: var(--accent-green);
+    }
+    .esp-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    .pd-gauge {
+      position: relative;
+      height: 80px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .pd-arc {
+      width: 140px;
+      height: 70px;
+      border: 3px solid rgba(99,179,237,0.15);
+      border-bottom: none;
+      border-radius: 70px 70px 0 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .pd-fill {
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 100%;
+      height: var(--fill, 60%);
+      background: linear-gradient(180deg, var(--accent-blue), transparent);
+      opacity: 0.4;
+    }
+    .pd-value {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--accent-blue);
+      white-space: nowrap;
+    }
+
+    .shape-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .shape-chip {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+    .shape-chip.active {
+      background: rgba(99,179,237,0.15);
+      border-color: rgba(99,179,237,0.4);
+      color: var(--accent-blue);
+    }
+
+    .no-results-banner {
+      text-align: center;
+      padding: 80px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .results-split { grid-template-columns: 1fr; }
+      .sidebar-card { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+
+  <div class="page-wrapper">
+    <!-- Navbar -->
+    <nav class="navbar">
+      <a href="index.html" class="navbar-brand">
+        <div class="brand-icon">👓</div>
+        <span class="brand-text">SpectAI</span>
+      </a>
+      <div class="nav-steps">
+        <a href="index.html" class="nav-step">
+          <span class="nav-step-num">1</span> Home
+        </a>
+        <div class="nav-step-divider"></div>
+        <a href="camera.html" class="nav-step">
+          <span class="nav-step-num">2</span> Scan
+        </a>
+        <div class="nav-step-divider"></div>
+        <a href="results.html" class="nav-step active">
+          <span class="nav-step-num">3</span> Results
+        </a>
+      </div>
+      <a href="camera.html" class="btn btn-primary" id="rescan-btn">📷 New Scan</a>
+    </nav>
+
+    <main class="main-content">
+      <div class="results-container">
+        <!-- Header -->
+        <div class="results-header">
+          <div class="hero-badge" style="margin:0 auto 16px;">
+            <div class="hero-badge-dot"></div>
+            Analysis Complete
+          </div>
+          <h1 class="results-title">Your Facial <span style="background:var(--gradient-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Analysis Report</span></h1>
+          <p class="results-subtitle" id="scan-timestamp">Scan completed just now</p>
+        </div>
+
+        <!-- No Results Banner (shown when no data) -->
+        <div class="no-results-banner" id="no-results-banner" style="display:none;">
+          <div style="font-size:4rem;">🤔</div>
+          <h2 style="font-family:'Space Grotesk',sans-serif; font-size:1.5rem;">No Scan Data Found</h2>
+          <p style="color:var(--text-secondary); max-width:400px;">Please complete a face scan first. Go back to the camera page and capture your image.</p>
+          <a href="camera.html" class="btn btn-primary btn-lg">📷 Start Scan</a>
+        </div>
+
+        <!-- Main Results -->
+        <div id="results-content" style="display:none;">
+          <div class="results-split">
+
+            <!-- Sidebar -->
+            <aside class="sidebar-card">
+              <div class="sidebar-img" id="face-preview">
+                <span>No preview</span>
+              </div>
+              <div>
+                <div class="scan-id" id="scan-id-label">Scan ID: —</div>
+              </div>
+
+              <!-- Confidence -->
+              <div>
+                <div style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-secondary);margin-bottom:12px;">Detection Confidence</div>
+                <div class="confidence-row">
+                  <div>
+                    <div class="conf-label-row">
+                      <span class="conf-label">Face Detection</span>
+                      <span class="conf-val" id="conf-face">—</span>
+                    </div>
+                    <div class="progress-bar-wrap">
+                      <div class="progress-bar"><div class="progress-fill" id="prog-face" style="width:0%"></div></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="conf-label-row">
+                      <span class="conf-label">Eye Detection</span>
+                      <span class="conf-val" id="conf-eye">—</span>
+                    </div>
+                    <div class="progress-bar-wrap">
+                      <div class="progress-bar"><div class="progress-fill" id="prog-eye" style="width:0%;background:var(--gradient-btn2)"></div></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="conf-label-row">
+                      <span class="conf-label">Landmark Quality</span>
+                      <span class="conf-val" id="conf-lm">—</span>
+                    </div>
+                    <div class="progress-bar-wrap">
+                      <div class="progress-bar"><div class="progress-fill" id="prog-lm" style="width:0%;background:linear-gradient(135deg,#68d391,#4fd1c5)"></div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- OLED Preview -->
+              <div>
+                <div style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-secondary);margin-bottom:12px;">OLED Preview</div>
+                <div class="oled-preview" id="oled-display">
+                  <div class="oled-slide active" id="oled-s1">Face: —</div>
+                  <div class="oled-slide" id="oled-s2">Eye: —</div>
+                  <div class="oled-slide" id="oled-s3">PD: — mm</div>
+                  <div class="oled-slide" id="oled-s4">Frame:<br/>—</div>
+                </div>
+              </div>
+
+              <!-- ESP32 Status -->
+              <div class="esp-status" id="esp-status">
+                <div class="esp-dot"></div>
+                <span id="esp-status-text">Sending to ESP32…</span>
+              </div>
+            </aside>
+
+            <!-- Main Panel -->
+            <div style="display:flex;flex-direction:column;gap:20px;">
+
+              <!-- Face Measurements -->
+              <div class="metric-card">
+                <div class="metric-card-header">
+                  <div class="metric-card-title">📏 Face Measurements</div>
+                  <div class="metric-card-icon blue">📐</div>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Face Width</span>
+                  <span class="metric-value highlight" id="r-face-width">—</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Face Length</span>
+                  <span class="metric-value highlight" id="r-face-length">—</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Forehead Width</span>
+                  <span class="metric-value" id="r-forehead">—</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Cheekbone Width</span>
+                  <span class="metric-value" id="r-cheekbone">—</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Jaw Width</span>
+                  <span class="metric-value" id="r-jaw">—</span>
+                </div>
+              </div>
+
+              <!-- Eye Measurements -->
+              <div class="metric-card">
+                <div class="metric-card-header">
+                  <div class="metric-card-title">👁️ Eye Measurements</div>
+                  <div class="metric-card-icon purple">🔍</div>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Left Eye Width</span>
+                  <span class="metric-value highlight" id="r-left-eye-w">—</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Right Eye Width</span>
+                  <span class="metric-value highlight" id="r-right-eye-w">—</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Eye Height (avg)</span>
+                  <span class="metric-value" id="r-eye-height">—</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Eye Aspect Ratio</span>
+                  <span class="metric-value" id="r-eye-ratio">—</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Interpupillary Distance (PD)</span>
+                  <span class="metric-value highlight" style="color:var(--accent-cyan);" id="r-pd">—</span>
+                </div>
+              </div>
+
+              <!-- Shape Classification Row -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <!-- Face Shape -->
+                <div class="metric-card">
+                  <div class="metric-card-header">
+                    <div class="metric-card-title">🔮 Face Shape</div>
+                    <div class="metric-card-icon cyan">🎭</div>
+                  </div>
+                  <div class="shape-display">
+                    <div class="shape-icon-large" id="face-shape-icon">🔮</div>
+                    <div class="shape-name" id="r-face-shape">—</div>
+                    <div class="shape-desc" id="r-face-shape-desc">Analyzing…</div>
+                  </div>
+                  <div class="shape-chips" id="face-shape-chips">
+                    <div class="shape-chip" data-shape="Oval">Oval</div>
+                    <div class="shape-chip" data-shape="Round">Round</div>
+                    <div class="shape-chip" data-shape="Square">Square</div>
+                    <div class="shape-chip" data-shape="Heart">Heart</div>
+                    <div class="shape-chip" data-shape="Diamond">Diamond</div>
+                    <div class="shape-chip" data-shape="Oblong">Oblong</div>
+                  </div>
+                </div>
+
+                <!-- Eye Shape -->
+                <div class="metric-card">
+                  <div class="metric-card-header">
+                    <div class="metric-card-title">👁️ Eye Shape</div>
+                    <div class="metric-card-icon pink">✨</div>
+                  </div>
+                  <div class="shape-display">
+                    <div class="shape-icon-large" id="eye-shape-icon" style="background:rgba(159,122,234,0.1);border-color:rgba(159,122,234,0.3);box-shadow:var(--shadow-glow-purple);">👁️</div>
+                    <div class="shape-name" id="r-eye-shape">—</div>
+                    <div class="shape-desc" id="r-eye-shape-desc">Analyzing…</div>
+                  </div>
+                  <div class="shape-chips" id="eye-shape-chips">
+                    <div class="shape-chip" data-shape="Almond">Almond</div>
+                    <div class="shape-chip" data-shape="Round">Round</div>
+                    <div class="shape-chip" data-shape="Hooded">Hooded</div>
+                    <div class="shape-chip" data-shape="Upturned">Upturned</div>
+                    <div class="shape-chip" data-shape="Downturned">Downturned</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recommendation -->
+              <div class="recommendation-card">
+                <div class="recommendation-title">
+                  <span>👓</span> Frame Recommendation
+                </div>
+                <div class="recommendation-grid">
+                  <div class="rec-item">
+                    <div class="rec-item-label">Frame Size</div>
+                    <div class="rec-item-value" id="r-frame-size">—</div>
+                  </div>
+                  <div class="rec-item">
+                    <div class="rec-item-label">Frame Style</div>
+                    <div class="rec-item-value" id="r-frame-style">—</div>
+                  </div>
+                  <div class="rec-item">
+                    <div class="rec-item-label">Lens Width</div>
+                    <div class="rec-item-value" id="r-lens-width">—</div>
+                  </div>
+                  <div class="rec-item">
+                    <div class="rec-item-label">Bridge Size</div>
+                    <div class="rec-item-value" id="r-bridge">—</div>
+                  </div>
+                  <div class="rec-item">
+                    <div class="rec-item-label">Temple Length</div>
+                    <div class="rec-item-value" id="r-temple">—</div>
+                  </div>
+                  <div class="rec-item">
+                    <div class="rec-item-label">Best Color</div>
+                    <div class="rec-item-value" id="r-color">—</div>
+                  </div>
+                </div>
+                <div style="margin-top:20px;padding:16px;background:rgba(99,179,237,0.06);border-radius:var(--radius-md);border:1px solid rgba(99,179,237,0.15);">
+                  <div style="font-size:0.78rem;color:var(--accent-blue);font-weight:600;margin-bottom:6px;">💡 Why This Frame?</div>
+                  <div style="font-size:0.88rem;color:var(--text-secondary);line-height:1.6;" id="r-reason">—</div>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="action-row">
+                <button class="btn btn-primary" id="download-pdf-btn" onclick="downloadReport()">
+                  📄 Download Report
+                </button>
+                <a href="camera.html" class="btn btn-ghost" id="new-scan-btn">
+                  🔄 New Scan
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <span>© 2025 SpectAI</span>
+      <span>Powered by MediaPipe · OpenCV · Flask</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="js/results.js"></script>
+</body>
+</html>

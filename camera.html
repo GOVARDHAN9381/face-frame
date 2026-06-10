@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Face Scan – SpectAI</title>
+  <meta name="description" content="Capture your face using the webcam for AI-powered spectacle frame analysis." />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      max-width: 680px;
+      width: 100%;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--accent-blue);
+      background: rgba(99,179,237,0.05);
+    }
+    .upload-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .upload-text { color: var(--text-secondary); font-size: 0.9rem; }
+    .upload-text strong { color: var(--accent-blue); }
+    #file-input { display: none; }
+
+    .tab-row {
+      display: flex;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 4px;
+      max-width: 360px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 20px;
+      border-radius: calc(var(--radius-md) - 4px);
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .tab-btn.active {
+      background: rgba(99,179,237,0.15);
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+
+    .tab-panel { display: none; flex-direction: column; align-items: center; gap: 20px; width: 100%; }
+    .tab-panel.active { display: flex; }
+
+    .countdown-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(7,11,20,0.6);
+      backdrop-filter: blur(4px);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 6rem;
+      font-weight: 900;
+      color: var(--accent-blue);
+      text-shadow: 0 0 40px rgba(99,179,237,0.8);
+      z-index: 10;
+      display: none;
+    }
+
+    .preview-img {
+      width: 100%;
+      border-radius: var(--radius-xl);
+      border: 2px solid var(--border);
+      display: block;
+    }
+
+    .mode-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-title">Analyzing Your Face…</div>
+    <div class="loading-steps">
+      <div class="loading-step active" id="step-1">🎯 Detecting facial landmarks…</div>
+      <div class="loading-step" id="step-2">📐 Extracting measurements…</div>
+      <div class="loading-step" id="step-3">🔮 Classifying face &amp; eye shape…</div>
+      <div class="loading-step" id="step-4">👓 Generating frame recommendation…</div>
+      <div class="loading-step" id="step-5">📡 Sending results to ESP32…</div>
+    </div>
+  </div>
+
+  <div class="page-wrapper">
+    <!-- Navbar -->
+    <nav class="navbar">
+      <a href="index.html" class="navbar-brand">
+        <div class="brand-icon">👓</div>
+        <span class="brand-text">SpectAI</span>
+      </a>
+      <div class="nav-steps">
+        <a href="index.html" class="nav-step">
+          <span class="nav-step-num">1</span> Home
+        </a>
+        <div class="nav-step-divider"></div>
+        <a href="camera.html" class="nav-step active">
+          <span class="nav-step-num">2</span> Scan
+        </a>
+        <div class="nav-step-divider"></div>
+        <a href="results.html" class="nav-step">
+          <span class="nav-step-num">3</span> Results
+        </a>
+      </div>
+      <a href="index.html" class="btn btn-ghost">← Back</a>
+    </nav>
+
+    <main class="main-content">
+      <div class="camera-container">
+        <!-- Header -->
+        <div class="camera-header">
+          <div class="hero-badge" style="margin-bottom:16px;">
+            <div class="hero-badge-dot"></div>
+            Step 2 — Face Capture
+          </div>
+          <h1 class="camera-title">Position Your Face</h1>
+          <p class="camera-subtitle">Face the camera straight on, in good lighting. Keep still when capturing.</p>
+        </div>
+
+        <!-- Mode Tabs -->
+        <div class="tab-row">
+          <button class="tab-btn active" id="tab-webcam" onclick="switchTab('webcam')">📷 Webcam</button>
+          <button class="tab-btn" id="tab-upload" onclick="switchTab('upload')">📁 Upload</button>
+        </div>
+
+        <!-- WEBCAM PANEL -->
+        <div class="tab-panel active" id="panel-webcam">
+          <div class="camera-frame">
+            <div class="video-wrapper" id="video-wrapper">
+              <video id="webcam-video" autoplay playsinline muted></video>
+              <canvas id="overlay-canvas"></canvas>
+              <div class="camera-corners">
+                <div class="corner corner-tl"></div>
+                <div class="corner corner-tr"></div>
+                <div class="corner corner-bl"></div>
+                <div class="corner corner-br"></div>
+              </div>
+              <div class="scan-line" id="scan-line"></div>
+              <div class="countdown-overlay" id="countdown"></div>
+              <div class="status-overlay">
+                <div class="status-dot" id="status-dot"></div>
+                <span id="status-text">Camera ready</span>
+              </div>
+            </div>
+
+            <!-- Hidden canvas for capture -->
+            <canvas id="capture-canvas" style="display:none;"></canvas>
+          </div>
+
+          <div class="camera-controls">
+            <button class="btn-icon" id="toggle-camera-btn" title="Switch Camera" onclick="toggleCamera()">🔄</button>
+            <button class="capture-btn" id="capture-btn" title="Capture Photo" onclick="startCountdown()">📸</button>
+            <button class="btn-icon" id="analyze-btn" title="Analyze" onclick="analyzeImage()" style="display:none;">🔍</button>
+          </div>
+
+          <div class="mode-label" id="webcam-hint">Press the 📸 button to capture</div>
+        </div>
+
+        <!-- UPLOAD PANEL -->
+        <div class="tab-panel" id="panel-upload">
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+            <div class="upload-icon">🖼️</div>
+            <div class="upload-text">
+              <strong>Click to upload</strong> or drag &amp; drop a photo<br/>
+              <span style="font-size:0.8rem; color:var(--text-muted);">JPG, PNG, WEBP · Max 10 MB</span>
+            </div>
+          </div>
+          <input type="file" id="file-input" accept="image/*" onchange="handleFileUpload(event)" />
+
+          <div id="upload-preview-wrap" style="display:none; max-width:680px; width:100%;">
+            <img id="upload-preview" class="preview-img" alt="Uploaded face image" />
+          </div>
+
+          <button class="btn btn-primary btn-lg" id="upload-analyze-btn" style="display:none;" onclick="analyzeUpload()">
+            🔍 Analyze This Photo
+          </button>
+        </div>
+
+        <!-- Tips -->
+        <div class="tips-card">
+          <div class="tips-title">📋 Tips for Best Results</div>
+          <ul class="tips-list">
+            <li><span>☀️</span> Use bright, even lighting</li>
+            <li><span>📐</span> Face the camera straight on</li>
+            <li><span>🚫</span> Remove glasses or hats</li>
+            <li><span>🎯</span> Keep your face centred in frame</li>
+            <li><span>📏</span> Maintain ~50 cm from screen</li>
+            <li><span>😐</span> Keep a neutral expression</li>
+          </ul>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <span>© 2025 SpectAI</span>
+      <span>Image processed locally — no data stored without consent</span>
+    </footer>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="js/camera.js"></script>
+</body>
+</html>
