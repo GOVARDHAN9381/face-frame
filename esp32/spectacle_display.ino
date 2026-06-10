@@ -44,9 +44,8 @@ WebServer server(80);
 // ── Timing ───────────────────────────────────────────────
 unsigned long lastFetch = 0;
 unsigned long lastSlideSwap = 0;
-const unsigned long FETCH_INTERVAL =
-    3000UL; // 3 s auto-refresh (faster for cloud)
-const unsigned long SLIDE_INTERVAL = 3000UL; // 3 s per slide
+const unsigned long FETCH_INTERVAL = 1500UL; // 1.5 s auto-refresh (much faster)
+const unsigned long SLIDE_INTERVAL = 1500UL; // 1.5 s per slide
 
 // ─────────────────────────────────────────────────────────
 void setup() {
@@ -112,10 +111,22 @@ void loop() {
   }
 
   // ── Slide rotation ──
-  if (g_dataReady && millis() - lastSlideSwap > SLIDE_INTERVAL) {
-    showSlide(g_currentSlide);
-    g_currentSlide = (g_currentSlide + 1) % 4;
-    lastSlideSwap = millis();
+  if (g_dataReady) {
+    if (millis() - lastSlideSwap > SLIDE_INTERVAL) {
+      showSlide(g_currentSlide);
+      g_currentSlide = (g_currentSlide + 1) % 4;
+      lastSlideSwap = millis();
+    }
+  } else {
+    if (millis() - lastSlideSwap > 1000) {
+      display.clearDisplay();
+      display.setTextSize(1);
+      display.setTextColor(SSD1306_WHITE);
+      display.setCursor(0, 28);
+      display.println("Waiting for scan...");
+      display.display();
+      lastSlideSwap = millis();
+    }
   }
 }
 
@@ -164,16 +175,19 @@ void fetchLatestResults() {
     http.begin(url);
   }
 
-  http.setTimeout(5000);
+  http.setTimeout(2500); // Shorter timeout so it doesn't block
   int code = http.GET();
 
   if (code == 200) {
     String payload = http.getString();
     JsonDocument doc;
     DeserializationError err = deserializeJson(doc, payload);
-    if (!err && doc["scans"].size() > 0) {
-      parseJsonToData(doc["scans"][0]);
-      Serial.println("Fetched latest scan from Flask");
+    if (!err) {
+      if (doc["scans"].size() > 0) {
+        parseJsonToData(doc["scans"][0]);
+      } else {
+        g_dataReady = false; // No data in database (cleared)
+      }
     }
   } else {
     Serial.printf("Flask fetch failed: %d\n", code);

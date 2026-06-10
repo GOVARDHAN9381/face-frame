@@ -136,6 +136,14 @@ def results(scan_id):
     return jsonify(row), 200
 
 
+# ── /clear ────────────────────────────────────────────────
+@app.route("/clear", methods=["POST", "GET"])
+def clear_history():
+    from database import clear_scans
+    clear_scans()
+    return jsonify({"status": "cleared"}), 200
+
+
 # ── /sendtoesp32 ──────────────────────────────────────────
 @app.route("/sendtoesp32", methods=["POST"])
 def sendtoesp32():

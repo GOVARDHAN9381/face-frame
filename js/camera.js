@@ -28,6 +28,11 @@ const loading = document.getElementById('loading-overlay');
 
 // ── Init ──────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
+  // Clear any old scans from the cloud database so ESP32 shows "Waiting"
+  fetch(`${API_BASE}/clear`, { method: 'POST' }).catch(e => console.error(e));
+
+  // Switch to webcam by default
+  switchTab('webcam');
   startWebcam();
   setupDragDrop();
 });

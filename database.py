@@ -96,6 +96,11 @@ def get_all_scans(limit: int = 100) -> list:
         ).fetchall()
     return [dict(r) for r in rows]
 
+def clear_scans():
+    with get_connection() as conn:
+        conn.execute("DELETE FROM scans")
+        conn.commit()
+
 
 def get_scan(scan_id: str) -> dict | None:
     with get_connection() as conn:
