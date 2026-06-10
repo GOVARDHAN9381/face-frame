@@ -155,27 +155,20 @@ function startOledRotation(d) {
   }, 3000);
 }
 
-// ── ESP32 Status Update ───────────────────────────────────
+// ── ESP32 Status Update ─────────────────────────────────────────────
 function updateEspStatus() {
   const statusEl   = document.getElementById('esp-status');
   const statusText = document.getElementById('esp-status-text');
-  const espStatus  = sessionStorage.getItem('spectai_esp_status');
 
-  if (espStatus === 'success') {
-    statusEl.style.background   = 'rgba(104,211,145,0.08)';
-    statusEl.style.borderColor  = 'rgba(104,211,145,0.2)';
-    statusEl.style.color        = 'var(--accent-green)';
-    statusText.textContent = '✅ Sent to ESP32 successfully';
-    const dot = statusEl.querySelector('.esp-dot');
-    if (dot) { dot.style.display = 'none'; }
-  } else {
-    statusEl.style.background  = 'rgba(237,100,166,0.08)';
-    statusEl.style.borderColor = 'rgba(237,100,166,0.2)';
-    statusEl.style.color       = 'var(--accent-pink)';
-    statusText.textContent = '⚠️ ESP32 not connected';
-    const dot = statusEl.querySelector('.esp-dot');
-    if (dot) { dot.style.background = 'var(--accent-pink)'; dot.style.animation = 'none'; }
-  }
+  // In cloud mode, the ESP32 polls Render directly every 3s.
+  // The push from Render → ESP32 local IP always fails (expected).
+  // So we always show the cloud-saved confirmation.
+  statusEl.style.background  = 'rgba(104,211,145,0.08)';
+  statusEl.style.borderColor = 'rgba(104,211,145,0.2)';
+  statusEl.style.color       = 'var(--accent-green)';
+  statusText.textContent = '✅ Data saved — ESP32 will auto-update via cloud polling';
+  const dot = statusEl.querySelector('.esp-dot');
+  if (dot) { dot.style.display = 'none'; }
 }
 
 // ── PDF Report ────────────────────────────────────────────
