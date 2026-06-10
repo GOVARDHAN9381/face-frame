@@ -4,7 +4,7 @@
    ============================================================ */
 
 const API_BASE = 'https://face-frame.onrender.com';
-const ESP32_IP = '192.168.137.143'; // Set this to the IP shown on your OLED screen!
+const ESP32_IP = '192.168.137.14'; // Set this to the IP shown on your OLED screen!
 
 let stream = null;
 let facingMode = 'user';
