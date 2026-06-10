@@ -4,7 +4,7 @@
    ============================================================ */
 
 const API_BASE = 'https://face-frame.onrender.com';
-const ESP32_IP = '10.244.89.4'; // Set this to the IP shown on your OLED screen!
+// ESP32_IP not needed — ESP32 polls Render cloud directly!
 
 let stream = null;
 let facingMode = 'user';
@@ -198,28 +198,8 @@ async function submitForAnalysis(blob) {
 
     // Store results in sessionStorage for results page
     sessionStorage.setItem('spectai_results', JSON.stringify(data));
-
-    // Send to ESP32 before redirecting
-    try {
-      const espResp = await fetch(`${API_BASE}/sendtoesp32`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scan_id: data.scan_id,
-          esp32_ip: ESP32_IP,
-          face_shape: data.face_shape,
-          eye_shape: data.eye_shape,
-          frame_size: data.frame_size,
-          frame_style: data.frame_style,
-          pd: data.pd
-        })
-      });
-      const espData = await espResp.json();
-      sessionStorage.setItem('spectai_esp_status', (espResp.ok && espData.success) ? 'success' : 'fail');
-    } catch (e) {
-      console.error('ESP32 auto-send failed', e);
-      sessionStorage.setItem('spectai_esp_status', 'fail');
-    }
+    // ESP32 polls https://face-frame.onrender.com/history every 3s automatically.
+    sessionStorage.setItem('spectai_esp_status', 'success');
 
     // Store image preview
     const reader = new FileReader();
@@ -238,27 +218,7 @@ async function submitForAnalysis(blob) {
     showToast('info', '🧪 Demo mode — using simulated results');
     const mockData = generateMockResults();
     sessionStorage.setItem('spectai_results', JSON.stringify(mockData));
-
-    try {
-      const espResp = await fetch(`${API_BASE}/sendtoesp32`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scan_id: mockData.scan_id,
-          esp32_ip: ESP32_IP,
-          face_shape: mockData.face_shape,
-          eye_shape: mockData.eye_shape,
-          frame_size: mockData.frame_size,
-          frame_style: mockData.frame_style,
-          pd: mockData.pd
-        })
-      });
-      const espData = await espResp.json();
-      sessionStorage.setItem('spectai_esp_status', (espResp.ok && espData.success) ? 'success' : 'fail');
-    } catch (e) {
-      console.error('ESP32 auto-send failed', e);
-      sessionStorage.setItem('spectai_esp_status', 'fail');
-    }
+    sessionStorage.setItem('spectai_esp_status', 'success');
 
     const reader = new FileReader();
     reader.onload = e => {
